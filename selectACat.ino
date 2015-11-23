@@ -9,16 +9,17 @@ const int thereIsACatPin = 2;
 
 // later, make these pin assignments. Using them as simple constants now.
 const int selectorFactor0 = 0;
-const int selectorFactor1 = 1;
-const int selectorFactor2 = 1;
+const int selectorFactor1 = 0;
+const int selectorFactor2 = 0;
 const int selectorFactor3 = 1;
 const int selectorFactor4 = 0;
 
 // Varaibles
 int doorsOpen = 0;
-int dailyRation = 0;
+int ration = 0;
 int todaysFeed = 0;
 int selectorPosition = 0;
+String stringOfPosition[8];
 
 void setup() {
   Serial.begin(9600);
@@ -32,7 +33,7 @@ void setup() {
 
 void loop() {
   // See where the selector is and change the daily ration as needed;
-  dailyRationRead();
+  rationRead();
   
   // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches & sensors.
   // an LED indicates that the cat is close enough. This is more for the humans, but who knows? Cats can learn?
@@ -84,20 +85,141 @@ void loop() {
 
 void feed() {
   // if there's not much food in the bowl, the daily limit of food hasn't been exceeded, and the doors are open, the hopper drops one portion of food.
-  if (doorsOpen == 1 && digitalRead(bowlWeightPin) == LOW && dailyRation >= todaysFeed) {
+  if (doorsOpen == 1 && digitalRead(bowlWeightPin) == LOW && ration >= todaysFeed) {
 
   }
 }
 
-void dailyRationRead() {
+void rationRead() {
   selectorPosition = (selectorFactor0 | selectorFactor1 * 2 | selectorFactor2 * 4 | selectorFactor3 * 8 | selectorFactor4 * 16);
+  
   Serial.println(selectorPosition);
   switch (selectorPosition) {
-    case 14:
+    case 30:
       Serial.println("selected 01110");
       delay(1000);
-      dailyRation = 2;
-      Serial.println(dailyRation);
+      ration = 1;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 15:
+      Serial.println("selected 11110");
+      delay(1000);
+      ration = 2;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 31:
+      Serial.println("selected 01111");
+      delay(1000);    
+      ration = 3;
+      Serial.println(ration);
+      break;
+  }
+    switch (selectorPosition) {
+    case 32:
+      Serial.println("selected 11111");
+      delay(1000);    
+      ration = 4;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 8:
+      Serial.println("selected 00010");
+      delay(1000);    
+      ration = 5;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 9:
+      Serial.println("selected 10010");
+      delay(1000);    
+      ration = 6;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 24:
+      Serial.println("selected 00011");
+      delay(1000);    
+      ration = 7;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 25:
+      Serial.println("selected 10011");
+      delay(1000);    
+      ration = 8;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 10:
+      Serial.println("selected 10101");
+      delay(1000);    
+      ration = 9;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 11:
+      Serial.println("selected 11010");
+      delay(1000);    
+      ration = 10;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 26:
+      Serial.println("selected 01011");
+      delay(1000);    
+      ration = 11;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 27:
+      Serial.println("selected 11011");
+      delay(1000);    
+      ration = 12;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 12:
+      Serial.println("selected 00110");
+      delay(1000);    
+      ration = 13;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 14:
+      Serial.println("selected 10110");
+      delay(1000);    
+      ration = 14;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 29:
+      Serial.println("selected 00111");
+      delay(1000);    
+      ration = 3;
+      Serial.println(ration);
+      break;
+  }
+  switch (selectorPosition) {
+    case 30:
+      Serial.println("selected 10111");
+      delay(1000);    
+      ration = 3;
+      Serial.println(ration);
       break;
   }
 }
