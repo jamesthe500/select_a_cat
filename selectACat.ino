@@ -1,7 +1,7 @@
 // See the README for a complete "talk-through" of the project.
 
 //Establish which pins attach to which items.
-const int bowlWeightPin = 8;
+const int bowlWeightPin = 7;
 const int servoPin = 13;
 const int catInRangePin = 4;
 const int micPin = 6;
@@ -10,11 +10,11 @@ const int foodDispensorPin = 3;
 const int dispensorAtTopPin = 5;
 
 // later, make these pin assignments. Using them as simple constants now.
-const int selectorFactor0 = 1;
-const int selectorFactor1 = 1;
-const int selectorFactor2 = 1;
-const int selectorFactor3 = 1;
-const int selectorFactor4 = 0;
+const int selectorFactor0 = 8;
+const int selectorFactor1 = 9;
+const int selectorFactor2 = 10;
+const int selectorFactor3 = 11;
+const int selectorFactor4 = 12;
 
 // Varaibles
 int doorsOpen = 0;
@@ -31,13 +31,18 @@ void setup() {
   pinMode(bowlWeightPin, INPUT_PULLUP);
   pinMode(catInRangePin, INPUT_PULLUP);
   pinMode(micPin, INPUT_PULLUP);
+  pinMode(selectorFactor0, INPUT_PULLUP);
+  pinMode(selectorFactor1, INPUT_PULLUP);
+  pinMode(selectorFactor2, INPUT_PULLUP);
+  pinMode(selectorFactor3, INPUT_PULLUP);
+  pinMode(selectorFactor4, INPUT_PULLUP);
 }
 
 void loop() {
   // See where the selector is and change the ration as needed;
 
   // un-comment when rotary switch is all hooked up.
-  // rationRead();
+   rationRead();
 
   // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches & sensors.
   // an LED indicates that the cat is close enough. This is more for the humans, but who knows? Cats can learn?
@@ -112,135 +117,88 @@ void feed() {
 // uses binary to give each input from the rotary switch a unique value to add to the int, sets ration acordingly. This is mapped out, see the red grid notebook.
 // straight up is 1, going clockwise from there. The flat part of the shaft is what was used to idicate direction.
 void rationRead() {
-  selectorPosition = (selectorFactor0 | selectorFactor1 * 2 | selectorFactor2 * 4 | selectorFactor3 * 8 | selectorFactor4 * 16);
-  Serial.println("selector position value, then ration:");
-  Serial.println(selectorPosition);
-  switch (selectorPosition) {
-    case 30:
-      Serial.println("selected 01110");
-      delay(1000);
-      ration = 1;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 15:
-      Serial.println("selected 01111");
-      delay(1000);
-      ration = 2;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 31:
-      Serial.println("selected 11110");
-      delay(1000);
-      ration = 3;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 32:
-      Serial.println("selected 11111");
-      delay(1000);
-      ration = 4;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 8:
-      Serial.println("selected 01000");
-      delay(1000);
-      ration = 5;
-      Serial.println(ration);
-      break;
+  selectorPosition = (!digitalRead(selectorFactor0) | !digitalRead(selectorFactor1) * 2 | !digitalRead(selectorFactor2) * 4 | !digitalRead(selectorFactor3) * 8 | !digitalRead(selectorFactor4) * 16);
+  if(selectorPosition == 0) {
+    selectorPosition = 13;
   }
   switch (selectorPosition) {
     case 9:
-      Serial.println("selected 01001");
-      delay(1000);
-      ration = 6;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 24:
-      Serial.println("selected 11000");
-      delay(1000);
-      ration = 7;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 25:
-      Serial.println("selected 11001");
-      delay(1000);
-      ration = 8;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 10:
-      Serial.println("selected 10101");
-      delay(1000);
-      ration = 9;
-      Serial.println(ration);
+      ration = 1;
       break;
   }
   switch (selectorPosition) {
     case 11:
-      Serial.println("selected 01011");
-      delay(1000);
-      ration = 10;
-      Serial.println(ration);
+      ration = 2;
+      break;
+  }
+  switch (selectorPosition) {
+    case 13:
+      ration = 3;
+      break;
+  }
+  switch (selectorPosition) {
+    case 15:
+      ration = 4;
+      break;
+  }
+  switch (selectorPosition) {
+    case 24:
+      ration = 5;
       break;
   }
   switch (selectorPosition) {
     case 26:
-      Serial.println("selected 11010");
-      delay(1000);
-      ration = 11;
-      Serial.println(ration);
+      ration = 6;
       break;
   }
   switch (selectorPosition) {
-    case 27:
-      Serial.println("selected 11011");
-      delay(1000);
-      ration = 12;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 12:
-      Serial.println("selected 01100");
-      delay(1000);
-      ration = 13;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 14:
-      Serial.println("selected 01101");
-      delay(1000);
-      ration = 14;
-      Serial.println(ration);
-      break;
-  }
-  switch (selectorPosition) {
-    case 29:
-      Serial.println("selected 11100");
-      delay(1000);
-      ration = 3;
-      Serial.println(ration);
+    case 28:
+      ration = 7;
       break;
   }
   switch (selectorPosition) {
     case 30:
-      Serial.println("selected 11101");
-      delay(1000);
-      ration = 3;
-      Serial.println(ration);
+      ration = 8;
+      break;
+  }
+  switch (selectorPosition) {
+    case 25:
+      ration = 9;
+      break;
+  }
+  switch (selectorPosition) {
+    case 27:
+      ration = 10;
+      break;
+  }
+  switch (selectorPosition) {
+    case 29:
+      ration = 11;
+      break;
+  }
+  switch (selectorPosition) {
+    case 31:
+      ration = 12;
+      break;
+  }
+  switch (selectorPosition) {
+    case 8:
+      ration = 13;
+      break;
+  }
+  switch (selectorPosition) {
+    case 10:
+      ration = 14;
+      break;
+  }
+  switch (selectorPosition) {
+    case 12:
+      ration = 15;
+      break;
+  }
+  switch (selectorPosition) {
+    case 14:
+      ration = 16;
       break;
   }
 }
