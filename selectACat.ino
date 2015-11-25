@@ -1,30 +1,35 @@
 // See the README for a complete "talk-through" of the project.
 
-//Establish which pins attach to which items.
-const int bowlWeightPin = 7;
-const int servoPin = 13;
-const int catInRangePin = 4;
-const int micPin = 6;
-const int thereIsACatPin = 2;
-const int foodDispensorPin = 3;
-const int dispensorAtTopPin = 5;
+#include <Servo.h>
 
-// later, make these pin assignments. Using them as simple constants now.
+//Establish which pins attach to which items.
+
+Servo lidServo;
+const int foodDispensorPin = 3;
+const int catInRangePin = 4;
+const int dispensorAtTopPin = 5;
+const int micPin = 6;
+const int bowlWeightPin = 7;
 const int selectorFactor0 = 8;
 const int selectorFactor1 = 9;
 const int selectorFactor2 = 10;
 const int selectorFactor3 = 11;
 const int selectorFactor4 = 12;
+const int thereIsACatPin = 13;
+
+const int lidClosedAngle = 90;
+const int lidOpenAngle = 175;
 
 // Varaibles
 int doorsOpen = 0;
 int ration = 3;
 int selectorPosition = 0;
+int lidAngle = 90;
 
 void setup() {
   Serial.begin(9600);
   // Establich which pins are innies, which are outies
-  pinMode(servoPin, OUTPUT);
+  lidServo.attach(A0);
   pinMode(thereIsACatPin, OUTPUT);
   pinMode(foodDispensorPin, OUTPUT);
   pinMode(dispensorAtTopPin, INPUT_PULLUP);
@@ -54,41 +59,30 @@ void loop() {
 
   // If there is a cat in range & it meows the right meow.
   if (digitalRead(catInRangePin) == LOW && digitalRead(micPin) == LOW) {
-    // blinking represents the servo in the process of opening
-    for (int i = 0; i < 40; i++) {
-      digitalWrite(servoPin, HIGH);
-      delay(50);
-      digitalWrite(servoPin, LOW);
-      delay(50);
-      i++;
+    // Open the lid to the open angle
+    for (lidAngle = lidClosedAngle; lidAngle < lidOpenAngle; lidAngle++) {
+      lidServo.write(lidAngle);
+      delay(60);
     }
-    // light on means it's open
-    digitalWrite(servoPin, HIGH);
     doorsOpen = 1;
-    // drop a food portion. could double up this function if portions are lacking.
+    // drop the aloted food portion(s).
     feed();
     delay(2000);
   }
 
   // Now the cat eats. The doors remain open until it walks out of range.
-  while (digitalRead(catInRangePin) == LOW && doorsOpen == 1) {
-    digitalWrite(servoPin, HIGH);
+
+   while (digitalRead(catInRangePin) == LOW && doorsOpen == 1) {
+    
   }
 
-  // blinking represents the servo in the process of closing
+  
   if (doorsOpen == 1) {
-    for (int i = 0; i < 40; i++) {
-      digitalWrite(servoPin, HIGH);
-      delay(50);
-      digitalWrite(servoPin, LOW);
-      delay(50);
-      i++;
+    for (lidAngle = lidOpenAngle; lidAngle >= lidClosedAngle; lidAngle--) {
+      lidServo.write(lidAngle);
+      delay(60);
     }
     doorsOpen = 0;
-  }
-
-  if (digitalRead(catInRangePin) == HIGH) {
-    digitalWrite(servoPin, LOW);
   }
 }
 
@@ -114,10 +108,12 @@ void feed() {
     digitalWrite(foodDispensorPin, LOW);
   }
 }
+
 // uses binary to give each input from the rotary switch a unique value to add to the int, sets ration acordingly. This is mapped out, see the red grid notebook.
 // straight up is 1, going clockwise from there. The flat part of the shaft is what was used to idicate direction.
 void rationRead() {
   selectorPosition = (!digitalRead(selectorFactor0) | !digitalRead(selectorFactor1) * 2 | !digitalRead(selectorFactor2) * 4 | !digitalRead(selectorFactor3) * 8 | !digitalRead(selectorFactor4) * 16);
+  // TODO Eliminate this if for production. It's here so that one doesn't have to hold the selector switch in place.
   if(selectorPosition == 0) {
     selectorPosition = 13;
   }
@@ -200,7 +196,7 @@ void rationRead() {
     case 14:
       ration = 16;
       break;
-  }
+  } 
 }
 
 
