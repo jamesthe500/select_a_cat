@@ -12,15 +12,49 @@
 */
 
 int incomingAudio;
+boolean clippingHigh = 0;
+boolean clippingLow = 0;
+int clippingHighCounter = 100;
+int clippingLowCounter = 100;
 
 void setup(){
   Serial.begin(9600);
+  pinMode(2, OUTPUT);
+  pinMode(A4, OUTPUT);
 }
 
 void loop(){
   incomingAudio = analogRead(A1);//read input from A0
   //do stuff with the variable "incomingAudio"
   Serial.println(incomingAudio);
+  if (incomingAudio == 1023){
+    digitalWrite(2,HIGH);
+    clippingHigh = 1;
+    clippingHighCounter = 100;
+  }
+  if(clippingHigh){
+    if (clippingHighCounter > 0){
+      clippingHighCounter--;
+    } else {
+      clippingHigh = 0;
+      digitalWrite(2,LOW);
+    }
+  }
+  
+  if (incomingAudio == 0){
+    digitalWrite(A4,HIGH);
+    clippingLow = 1;
+    clippingLowCounter = 100;
+  }
+  if(clippingLow){
+    if (clippingLowCounter > 0){
+      clippingLowCounter--;
+      
+    } else {
+      clippingLow = 0;
+      digitalWrite(A4,LOW);
+    }
+  }
 }
 
 
