@@ -16,6 +16,8 @@ boolean clippingHigh = 0;
 boolean clippingLow = 0;
 int clippingHighCounter = 100;
 int clippingLowCounter = 100;
+int signalThen;
+int signalNow;
 
 void setup(){
   Serial.begin(9600);
@@ -26,8 +28,30 @@ void setup(){
 void loop(){
   incomingAudio = analogRead(A1);//read input from A0
   //do stuff with the variable "incomingAudio"
-  Serial.println(incomingAudio);
-  if (incomingAudio == 1023){
+  //Serial.println(incomingAudio);
+
+  
+  
+  signalNow = incomingAudio;
+
+  
+
+  if (abs(signalNow - signalThen) > 130 ){
+    digitalWrite(2,HIGH);
+    clippingHigh = 1;
+    clippingHighCounter = 50;
+  }
+  if(clippingHigh){
+    if (clippingHighCounter > 0){
+      clippingHighCounter--;
+    } else {
+      clippingHigh = 0;
+      digitalWrite(2,LOW);
+    }
+  }
+  signalThen = incomingAudio;
+  
+  /*if (incomingAudio == 1023){
     digitalWrite(2,HIGH);
     clippingHigh = 1;
     clippingHighCounter = 100;
@@ -39,7 +63,7 @@ void loop(){
       clippingHigh = 0;
       digitalWrite(2,LOW);
     }
-  }
+  }*/
   
   if (incomingAudio == 0){
     digitalWrite(A4,HIGH);
