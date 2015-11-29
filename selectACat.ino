@@ -17,14 +17,14 @@ const int selectorFactor3 = 11;
 const int selectorFactor4 = 12;
 const int thereIsACatPin = 13;
 
-const int lidClosedAngle = 90;
+const int lidClosedAngle = 93;
 const int lidOpenAngle = 175;
 
 // Varaibles
 int doorsOpen = 0;
 int ration = 3;
 int selectorPosition = 0;
-int lidAngle = 90;
+int lidAngle = lidClosedAngle;
 
 void setup() {
   Serial.begin(9600);
