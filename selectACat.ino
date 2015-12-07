@@ -1,14 +1,17 @@
 // See the README for a complete "talk-through" of the project.
 
 #include <Servo.h>
+#include <NewPing.h>
 
 //Establish which pins attach to which items.
 
 Servo lidServo;
+const int markPin = A1;
+const int twainPin = A2;
 const int foodDispensorPin = 3;
-const int catInRangePin = 4;
+const int correctCatWeightPin = 4;
 const int dispensorAtTopPin = 5;
-const int micPin = 6;
+const int reservoirLowLED = 6;
 const int bowlWeightPin = 7;
 const int selectorFactor0 = 8;
 const int selectorFactor1 = 9;
@@ -17,8 +20,12 @@ const int selectorFactor3 = 11;
 const int selectorFactor4 = 12;
 const int thereIsACatPin = 13;
 
+
 const int lidClosedAngle = 93;
 const int lidOpenAngle = 175;
+
+const int max_distance = 20;
+NewPing sonar(markPin, twainPin, max_distance);
 
 // Varaibles
 int doorsOpen = 0;
@@ -31,11 +38,11 @@ void setup() {
   // Establich which pins are innies, which are outies
   lidServo.attach(A0);
   pinMode(thereIsACatPin, OUTPUT);
+  pinMode(reservoirLowLED, OUTPUT);
   pinMode(foodDispensorPin, OUTPUT);
   pinMode(dispensorAtTopPin, INPUT_PULLUP);
   pinMode(bowlWeightPin, INPUT_PULLUP);
-  pinMode(catInRangePin, INPUT_PULLUP);
-  pinMode(micPin, INPUT_PULLUP);
+  pinMode(correctCatWeightPin, INPUT_PULLUP);
   pinMode(selectorFactor0, INPUT_PULLUP);
   pinMode(selectorFactor1, INPUT_PULLUP);
   pinMode(selectorFactor2, INPUT_PULLUP);
@@ -44,21 +51,29 @@ void setup() {
 }
 
 void loop() {
-  // See where the selector is and change the ration as needed;
+  // check the distance from the lid to the top of the food pile in the reservoir
+  int uS = sonar.ping_median();
+  if(uS / US_ROUNDTRIP_CM > 6){
+    digitalWrite(reservoirLowLED, HIGH);
+  } else {
+    digitalWrite(reservoirLowLED, LOW);
+  }
 
-  // un-comment when rotary switch is all hooked up.
+  
+  // See where the selector is and change the ration as needed;
    rationRead();
 
   // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches & sensors.
   // an LED indicates that the cat is close enough. This is more for the humans, but who knows? Cats can learn?
-  if (digitalRead(catInRangePin) == LOW) {
+  if (digitalRead(correctCatWeightPin) == LOW) {
     digitalWrite(thereIsACatPin, HIGH);
   } else {
     digitalWrite(thereIsACatPin, LOW);
   }
 
-  // If there is a cat in range & it meows the right meow.
-  if (digitalRead(catInRangePin) == LOW && digitalRead(micPin) == LOW) {
+  // If there is a cat in range & it weighs the right ammount
+  // todo: make this a weight range rather than a switch
+  if (digitalRead(correctCatWeightPin) == LOW) {
     // Open the lid to the open angle
     for (lidAngle = lidClosedAngle; lidAngle < lidOpenAngle; lidAngle++) {
       lidServo.write(lidAngle);
@@ -70,13 +85,13 @@ void loop() {
     delay(2000);
   }
 
-  // Now the cat eats. The doors remain open until it walks out of range.
+  // Now the cat eats. The doors remain open until it leaves the scale.
 
-   while (digitalRead(catInRangePin) == LOW && doorsOpen == 1) {
+   while (digitalRead(correctCatWeightPin) == LOW && doorsOpen == 1) {
     
   }
 
-  
+  // checking to be sure the doors are open, then closing because the cat is off the scale.
   if (doorsOpen == 1) {
     for (lidAngle = lidOpenAngle; lidAngle >= lidClosedAngle; lidAngle--) {
       lidServo.write(lidAngle);
@@ -113,7 +128,7 @@ void feed() {
 // straight up is 1, going clockwise from there. The flat part of the shaft is what was used to idicate direction.
 void rationRead() {
   selectorPosition = (!digitalRead(selectorFactor0) | !digitalRead(selectorFactor1) * 2 | !digitalRead(selectorFactor2) * 4 | !digitalRead(selectorFactor3) * 8 | !digitalRead(selectorFactor4) * 16);
-  // TODO Eliminate this if for production. It's here so that one doesn't have to hold the selector switch in place.
+  // TODO Eliminate this if-statement for production. It's here so that one doesn't have to hold the selector switch in place.
   if(selectorPosition == 0) {
     selectorPosition = 13;
   }
