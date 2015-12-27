@@ -88,10 +88,15 @@ void loop() {
     scale.tare();
   }
 
+  // for testing purposes
+  Serial.print("Scale reading: ");
+  Serial.println(scale.get_units());
+
   // push a button to weigh in the correct cat,
   // sets the medianCatWeight if a good reading is achieved
   if (digitalRead(weighCorrectCatPin) == LOW) {
     weighIn();
+
   }
 
   // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches
@@ -99,12 +104,16 @@ void loop() {
   // first see that there is a cat (>6lbs) then read its weight
   if (scale.get_units() > minimumPossibleCat) {
     // get a reading and set it for this fn
-    float catOnScaleWeight = readCatWeight();
+    float catOnScaleWeight = readCatWeight(true);
+    Serial.print("catOnScale: ");
+    Serial.println(catOnScaleWeight);
 
     // see if in range
     if (abs(catOnScaleWeight - medianCatWeight) <= allowedWeightVariance) {
       // make this the new median weight
       medianCatWeight = catOnScaleWeight;
+      Serial.print("New Median Cat Weight: ");
+      Serial.println(medianCatWeight);
       // do the things for the right cat
       digitalWrite(thereIsACatPin, HIGH);
       openDoor();
@@ -113,7 +122,7 @@ void loop() {
       int intruderPresenceScore = 0;
       while (stillFeeding == true) {
         // start with a 1 second reading for this iteration
-        float checkWeight = readCatWeight();
+        float checkWeight = readCatWeight(false);
         Serial.print("checkWeight: ");
         Serial.println(checkWeight);
         // if the cat has stepped off the scale, as indicated by the weight dropping to less than 1/3
@@ -219,6 +228,7 @@ void weighIn() {
     }
   }
   resetWeighVars();
+  Serial.print("Calibrated Median Cat Weight: ");
   Serial.println(medianCatWeight);
 }
 
@@ -232,22 +242,31 @@ void resetWeighVars() {
 
 // for when a weight greater than 6 lbs steps on the scale
 // read for 1 second to find an average
-float readCatWeight() {
+float readCatWeight(bool doorClosed) {
   float thisCatsWeight;
   unsigned long startMillis = millis();
   while (scale.get_units() > minimumPossibleCat && millis() - startMillis < 1000) {
     ledBlink(thereIsACatPin, 50, 50);
     readScale();
   }
-  // throw out extremes
-  averageReading = (readingTally - highReading - lowReading) / (readingNumber - 2);
-  if (averageReading == 500){
+  // jibbering is not allowed for a door opener.
+  if (highReading - lowReading > .5 && doorClosed) {
     thisCatsWeight = 0;
+    resetWeighVars();
+    return thisCatsWeight;
+
   } else {
-    thisCatsWeight = averageReading;
+    // throw out extremes
+    averageReading = (readingTally - highReading - lowReading) / (readingNumber - 2);
+    if (averageReading == 500) {
+      thisCatsWeight = 0;
+      return thisCatsWeight;
+    } else {
+      thisCatsWeight = averageReading;
+      resetWeighVars();
+      return thisCatsWeight;
+    }
   }
-  resetWeighVars();
-  return thisCatsWeight;
 }
 
 void readScale() {
