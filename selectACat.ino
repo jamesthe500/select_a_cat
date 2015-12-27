@@ -6,11 +6,12 @@
 
 //Establish which pins attach to which items.
 
-Servo lidServo;
+Servo doorServo;
 const int markPin = A1;
 const int twainPin = A2;
 const int scaleData = A3;
 const int scaleClock = A4;
+const int deterrentDevice = 2;
 const int foodDispensorPin = 3;
 const int weighCorrectCatPin = 4;
 const int dispensorAtTopPin = 5;
@@ -24,8 +25,8 @@ const int selectorFactor4 = 12;
 const int thereIsACatPin = 13;
 
 
-const int lidClosedAngle = 93;
-const int lidOpenAngle = 175;
+const int doorClosedAngle = 93;
+const int doorOpenAngle = 175;
 
 const int max_distance = 20;
 NewPing sonar(markPin, twainPin, max_distance);
@@ -35,11 +36,12 @@ float calibration_factor = -4700;
 
 // Varaibles
 float medianCatWeight = 0;
-int doorsOpen = 0;
+int doorOpen = 0;
 int ration = 3;
 int selectorPosition = 0;
-int lidAngle = lidClosedAngle;
+int doorAngle = doorClosedAngle;
 float allowedWeightVariance = 1;
+const int minimumPossibleCat = 6;
 
 // variables for weigh-in
 float readingTally = 0;
@@ -51,13 +53,13 @@ float averageReading = 0;
 void setup() {
   Serial.begin(9600);
   // Establich which pins are innies, which are outies
-  lidServo.attach(A0);
+  doorServo.attach(A0);
+  pinMode(deterrentDevice, OUTPUT);
   pinMode(thereIsACatPin, OUTPUT);
   pinMode(reservoirLowLED, OUTPUT);
   pinMode(foodDispensorPin, OUTPUT);
   pinMode(dispensorAtTopPin, INPUT_PULLUP);
   pinMode(weighCorrectCatPin, INPUT_PULLUP);
-  pinMode(correctCatWeightPin, INPUT_PULLUP);
   pinMode(selectorFactor0, INPUT_PULLUP);
   pinMode(selectorFactor1, INPUT_PULLUP);
   pinMode(selectorFactor2, INPUT_PULLUP);
@@ -82,7 +84,7 @@ void loop() {
   rationRead();
 
   // when scale is empty, tare if the baseline drifts too much.
-  if(abs(scale.get_units()) >= 0.1 && scale.get_units() < 1){
+  if (abs(scale.get_units()) >= 0.05 && scale.get_units() < 0.1) {
     scale.tare();
   }
 
@@ -92,62 +94,90 @@ void loop() {
     weighIn();
   }
 
-  // If it reads the cat weight range, set this number to the new median & open up
-  // during open-time, keep checking for the weight to drop and stay low for a second then close door.
-  // also check for weight to jump by 1/4 a cat and stay high for a second then sound a buzzer
-  // buzzer cuts when the weight drops to original cat weightish
-  // if there is still a second cat after 3 seconds, the door closes.
+  // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches
 
-  // ? is it a constant power draw? This might be a problem, might need another source if it interferes with other powers.
+  // first see that there is a cat (>6lbs) then read its weight
+  if (scale.get_units() > minimumPossibleCat) {
+    // get a reading and set it for this fn
+    float catOnScaleWeight = readCatWeight();
 
-  // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches & sensors
-  if (abs(scale.get_units() - medianCatWeight) < allowedWeightVariance) {
-    digitalWrite(thereIsACatPin, HIGH);
-  } else {
-    digitalWrite(thereIsACatPin, LOW);
+    // see if in range
+    if (abs(catOnScaleWeight - medianCatWeight) <= allowedWeightVariance) {
+      // make this the new median weight
+      medianCatWeight = catOnScaleWeight;
+      // do the things for the right cat
+      digitalWrite(thereIsACatPin, HIGH);
+      openDoor();
+
+      bool stillFeeding = true;
+      int intruderPresenceScore = 0;
+      while (stillFeeding == true) {
+        // start with a 1 second reading for this iteration
+        float checkWeight = readCatWeight();
+        Serial.print("checkWeight: ");
+        Serial.println(checkWeight);
+        // if the cat has stepped off the scale, as indicated by the weight dropping to less than 1/3
+        if (checkWeight < (medianCatWeight / 3)) {
+          // close doors, end loop
+          closeDoor();
+          stillFeeding = false;
+
+          // if the weight is up by the allowed variance, we have an intruider
+        } else if (checkWeight - medianCatWeight > allowedWeightVariance ) {
+          intruderPresenceScore += 1;
+          // if the extra cat has stuck around
+          if (intruderPresenceScore > 3) {
+            closeDoor();
+            stillFeeding = false;
+          } else {
+            deterrent(1000);
+          }
+        }
+      } // end of while feeding
+
+      intruderPresenceScore = 0;
+    }
+
+  } // end of checking the weight of the cat
+
+} // end of main loop
+
+
+
+
+void openDoor() {
+  // Open the door to the open angle
+  for (doorAngle = doorClosedAngle; doorAngle < doorOpenAngle; doorAngle++) {
+    doorServo.write(doorAngle);
+    delay(60);
   }
+  doorOpen = 1;
+  // drop the aloted food portion(s).
+  feed();
+  delay(1000);
+}
 
-  // If the cat weighs the right ammount
-  // todo: make this a weight range rather than a switch
-  if (digitalRead(correctCatWeightPin) == LOW) {
-    // Open the lid to the open angle
-    for (lidAngle = lidClosedAngle; lidAngle < lidOpenAngle; lidAngle++) {
-      lidServo.write(lidAngle);
+void closeDoor() {
+  // checking to be sure the door is open, then close it
+  if (doorOpen == 1) {
+    for (doorAngle = doorOpenAngle; doorAngle >= doorClosedAngle; doorAngle--) {
+      doorServo.write(doorAngle);
       delay(60);
     }
-    doorsOpen = 1;
-    // drop the aloted food portion(s).
-    feed();
-    delay(2000);
-  }
-
-  // Now the cat eats. The doors remain open until it leaves the scale.
-
-  while (digitalRead(correctCatWeightPin) == LOW && doorsOpen == 1) {
-
-  }
-
-  // checking to be sure the doors are open, then closing because the cat is off the scale.
-  if (doorsOpen == 1) {
-    for (lidAngle = lidOpenAngle; lidAngle >= lidClosedAngle; lidAngle--) {
-      lidServo.write(lidAngle);
-      delay(60);
-    }
-    doorsOpen = 0;
+    doorOpen = 0;
   }
 }
 
 void feed() {
-  // use the too-much-food function?
+  // use the too-much-food function? look back to commits pre 12/26/15
   // if there's not much food in the bowl and the doors are open, the hopper starts dropping portions of food.
-  if (doorsOpen == 1 && digitalRead(bowlWeightPin) == HIGH) {
+  if (doorOpen == 1) {
     // start rotating the motor. When it gets back to the top it checks weight (a higher value than above) and to see that it's under ration before continuing with the rotate.
-    Serial.println("inside if feed zone, ration:");
-    Serial.println(ration);
-    for (int i = 0 ; doorsOpen == 1 && digitalRead(bowlWeightPin) == HIGH && ration > i ; i++) {
+    /* Serial.print("ration: ");
+      Serial.println(ration); */
+    for (int i = 0 ; doorOpen == 1 && ration > i ; i++) {
       // dispensor at top will be determined by a contact to a metal plate on a disc that rotates with the dispensor ball,
       // so when it hits that plate it'll be oriented to the fill position. When it starts back up, it'll still be in contact for a bit
-      Serial.println("inside of feed zone");
       while (digitalRead(dispensorAtTopPin) == LOW) {
         // rotates out of the plate zone
         digitalWrite(foodDispensorPin, HIGH);
@@ -188,12 +218,36 @@ void weighIn() {
       }
     }
   }
+  resetWeighVars();
+  Serial.println(medianCatWeight);
+}
+
+void resetWeighVars() {
   readingTally = 0;
   readingNumber = 0;
   highReading = 0;
   lowReading = 1000;
   averageReading = 0;
-  Serial.println(medianCatWeight);
+}
+
+// for when a weight greater than 6 lbs steps on the scale
+// read for 1 second to find an average
+float readCatWeight() {
+  float thisCatsWeight;
+  unsigned long startMillis = millis();
+  while (scale.get_units() > minimumPossibleCat && millis() - startMillis < 1000) {
+    ledBlink(thereIsACatPin, 50, 50);
+    readScale();
+  }
+  // throw out extremes
+  averageReading = (readingTally - highReading - lowReading) / (readingNumber - 2);
+  if (averageReading == 500){
+    thisCatsWeight = 0;
+  } else {
+    thisCatsWeight = averageReading;
+  }
+  resetWeighVars();
+  return thisCatsWeight;
 }
 
 void readScale() {
@@ -207,6 +261,17 @@ void readScale() {
     lowReading = currentReading;
   }
   averageReading = readingTally / readingNumber;
+}
+
+void deterrent(int deterTimeMs) {
+  unsigned long startMillis = millis();
+  while (millis() - startMillis < deterTimeMs) {
+    digitalWrite(deterrentDevice, HIGH);
+    delay(20);
+    digitalWrite(deterrentDevice, LOW);
+    delay(20);
+  }
+
 }
 
 
