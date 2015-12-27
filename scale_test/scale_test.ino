@@ -73,7 +73,7 @@ void setup() {
   Serial.println("Press + or a to increase calibration factor");
   Serial.println("Press - or z to decrease calibration factor");
 
-  scale.set_scale();
+   scale.set_scale(calibration_factor);
   scale.tare();  //Reset the scale to 0
 
   long zero_factor = scale.read_average(); //Get a baseline reading
@@ -83,7 +83,7 @@ void setup() {
 
 void loop() {
 
-  scale.set_scale(calibration_factor); //Adjust to this calibration factor
+ // scale.set_scale(calibration_factor); //Adjust to this calibration factor
 
   Serial.print("Reading: ");
   Serial.print(scale.get_units(), 2);
