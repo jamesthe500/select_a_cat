@@ -7,6 +7,7 @@
 //Establish which pins attach to which items.
 
 Servo doorServo;
+
 const int markPin = A1;
 const int twainPin = A2;
 const int scaleData = A3;
@@ -16,7 +17,7 @@ const int foodDispensorPin = 3;
 const int weighCorrectCatPin = 4;
 const int dispensorAtTopPin = 5;
 const int reservoirLowLED = 6;
-const int bowlWeightPin = 7;
+
 const int selectorFactor0 = 8;
 const int selectorFactor1 = 9;
 const int selectorFactor2 = 10;
