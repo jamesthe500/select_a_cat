@@ -93,15 +93,14 @@ void loop() {
   Serial.print("Scale reading: ");
   Serial.println(scale.get_units());
 
+  // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches
+
   // push a button to weigh in the correct cat,
   // sets the medianCatWeight if a good reading is achieved
   if (digitalRead(weighCorrectCatPin) == LOW) {
     weighIn();
-
   }
-
-  // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches
-
+  
   // first see that there is a cat (>6lbs) then read its weight
   if (scale.get_units() > minimumPossibleCat) {
     // get a reading and set it for this fn
@@ -182,7 +181,9 @@ void feed() {
   // use the too-much-food function? look back to commits pre 12/26/15
   // if there's not much food in the bowl and the doors are open, the hopper starts dropping portions of food.
   if (doorOpen == 1) {
-    // start rotating the motor. When it gets back to the top it checks weight (a higher value than above) and to see that it's under ration before continuing with the rotate.
+    // start rotating the motor. 
+    // When it gets back to the top it checks weight (a higher value than above) 
+    // and to see that it's under ration before continuing with the rotate.
     /* Serial.print("ration: ");
       Serial.println(ration); */
     for (int i = 0 ; doorOpen == 1 && ration > i ; i++) {
