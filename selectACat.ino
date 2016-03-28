@@ -18,11 +18,6 @@ const int weighCorrectCatPin = 4;
 const int dispensorAtTopPin = 5;
 const int reservoirLowLED = 6;
 
-const int selectorFactor0 = 8;
-const int selectorFactor1 = 9;
-const int selectorFactor2 = 10;
-const int selectorFactor3 = 11;
-const int selectorFactor4 = 12;
 const int thereIsACatPin = 13;
 
 
@@ -61,11 +56,6 @@ void setup() {
   pinMode(foodDispensorPin, OUTPUT);
   pinMode(dispensorAtTopPin, INPUT_PULLUP);
   pinMode(weighCorrectCatPin, INPUT_PULLUP);
-  pinMode(selectorFactor0, INPUT_PULLUP);
-  pinMode(selectorFactor1, INPUT_PULLUP);
-  pinMode(selectorFactor2, INPUT_PULLUP);
-  pinMode(selectorFactor3, INPUT_PULLUP);
-  pinMode(selectorFactor4, INPUT_PULLUP);
 
   // initialize the scale
   scale.set_scale(calibration_factor);
@@ -299,91 +289,8 @@ void deterrent(int deterTimeMs) {
 // uses binary to give each input from the rotary switch a unique value to add to the int, sets ration acordingly. This is mapped out, see the red grid notebook.
 // straight up is 1, going clockwise from there. The flat part of the shaft is what was used to idicate direction.
 void rationRead() {
-  selectorPosition = (!digitalRead(selectorFactor0) | !digitalRead(selectorFactor1) * 2 | !digitalRead(selectorFactor2) * 4 | !digitalRead(selectorFactor3) * 8 | !digitalRead(selectorFactor4) * 16);
-  // TODO Eliminate this if-statement for production. It's here so that one doesn't have to hold the selector switch in place.
-  if (selectorPosition == 0) {
-    selectorPosition = 13;
-  }
-  switch (selectorPosition) {
-    case 9:
-      ration = 1;
-      break;
-  }
-  switch (selectorPosition) {
-    case 11:
-      ration = 2;
-      break;
-  }
-  switch (selectorPosition) {
-    case 13:
-      ration = 3;
-      break;
-  }
-  switch (selectorPosition) {
-    case 15:
-      ration = 4;
-      break;
-  }
-  switch (selectorPosition) {
-    case 24:
-      ration = 5;
-      break;
-  }
-  switch (selectorPosition) {
-    case 26:
-      ration = 6;
-      break;
-  }
-  switch (selectorPosition) {
-    case 28:
-      ration = 7;
-      break;
-  }
-  switch (selectorPosition) {
-    case 30:
-      ration = 8;
-      break;
-  }
-  switch (selectorPosition) {
-    case 25:
-      ration = 9;
-      break;
-  }
-  switch (selectorPosition) {
-    case 27:
-      ration = 10;
-      break;
-  }
-  switch (selectorPosition) {
-    case 29:
-      ration = 11;
-      break;
-  }
-  switch (selectorPosition) {
-    case 31:
-      ration = 12;
-      break;
-  }
-  switch (selectorPosition) {
-    case 8:
-      ration = 13;
-      break;
-  }
-  switch (selectorPosition) {
-    case 10:
-      ration = 14;
-      break;
-  }
-  switch (selectorPosition) {
-    case 12:
-      ration = 15;
-      break;
-  }
-  switch (selectorPosition) {
-    case 14:
-      ration = 16;
-      break;
-  }
+  // todo: replace this with a user interface.
+  ration = 3;
 }
 
 
