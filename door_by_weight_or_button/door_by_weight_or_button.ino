@@ -10,7 +10,8 @@ Servo doorServo;
 const int scaleData = A3;
 const int scaleClock = A4;
 const int deterrentDevice = 2;
-const int weighCorrectCatPin = 7;
+//const int weighCorrectCatPin = 7;
+const int tarePin = 7;
 
 const int thereIsACatPin = 13;
 
@@ -24,12 +25,12 @@ HX711 scale(scaleData, scaleClock);
 float calibration_factor = -4700;
 
 // Varaibles
-float medianCatWeight = 0;
+float medianCatWeight = 8.4;
 int doorOpen = 0;
 //int ration = 3;
 //int selectorPosition = 0;
 int doorAngle = doorClosedAngle;
-float allowedWeightVariance = 1;
+float allowedWeightVariance = 3;
 int currentServoAngle = 0;
 
 // variables for weigh-in
@@ -48,8 +49,9 @@ void setup() {
   //pinMode(reservoirLowLED, OUTPUT);
   //pinMode(foodDispensorPin, OUTPUT);
   //pinMode(dispensorAtTopPin, INPUT_PULLUP);
-  pinMode(weighCorrectCatPin, INPUT_PULLUP);
+  //pinMode(weighCorrectCatPin, INPUT_PULLUP);
   pinMode(openDoorSignal, INPUT_PULLUP);
+  pinMode(tarePin, INPUT_PULLUP);
   currentServoAngle = doorServo.read();
   closeDoor();
 
@@ -81,10 +83,13 @@ void loop() {
   Serial.println(scale.get_units());
   Serial.print("medianCat: ");
   Serial.println(medianCatWeight);
+  Serial.println("");
 
+  /*
   if(digitalRead(openDoorSignal) == LOW){
     Serial.print("Yeah, you pushed the button");
   };
+  */
 
   // Allows the user to tare by pressing "t" in the serial monitor
   // TODO: make a button for this.
@@ -95,27 +100,34 @@ void loop() {
     scale.tare();
   }
 
+  // tare with a button too!
+  if (digitalRead(tarePin) == LOW){
+    scale.tare();
+  }
+
   // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches
 
   // push a button to weigh in the correct cat,
   // sets the medianCatWeight if a good reading is achieved
-  if (digitalRead(weighCorrectCatPin) == LOW) {
+  /*if (digitalRead(weighCorrectCatPin) == LOW) {
     weighIn();
   }
+  */
 
   // first see that there is a cat (>6lbs) then read its weight,
-  // don't do this if there hasn't been a weigh-in
   // finally, a human has to push a button too.
-  if (scale.get_units() > minimumPossibleCat && medianCatWeight != 0 && digitalRead(openDoorSignal) == LOW) {
+  if (scale.get_units() > minimumPossibleCat) {
     // get a reading and set it for this fn
     float catOnScaleWeight = readCatWeight(true);
     Serial.print("catOnScale: ");
     Serial.println(catOnScaleWeight);
 
     // see if in range
-    if (abs(catOnScaleWeight - medianCatWeight) <= allowedWeightVariance) {
+    if (abs(catOnScaleWeight - medianCatWeight) <= allowedWeightVariance && digitalRead(openDoorSignal) == LOW) {
       // make this the new median weight
-      medianCatWeight = catOnScaleWeight;
+      //medianCatWeight = catOnScaleWeight;
+      // Swap ^ for v if we ever go back to using weight for a credential.
+      medianCatWeight = 8.4;
       Serial.print("New Median Cat Weight: ");
       Serial.println(medianCatWeight);
       // do the things for the right cat
@@ -217,6 +229,7 @@ void ledBlink(int blinkingLED, int blinkOnLengthMs, int blinkOffLengthMs) {
   while (millis() < startMillis + blinkOffLengthMs + blinkOnLengthMs);
 }
 
+/*
 void weighIn() {
   unsigned long startMillis = millis();
   while (digitalRead(weighCorrectCatPin) == LOW && millis() - startMillis < 2000) {
@@ -240,6 +253,7 @@ void weighIn() {
   Serial.print("Calibrated Median Cat Weight: ");
   Serial.println(medianCatWeight);
 }
+*/
 
 void resetWeighVars() {
   readingTally = 0;
