@@ -9,6 +9,7 @@ Servo doorServo;
 
 const int scaleData = A3;
 const int scaleClock = A4;
+const int offTare = A5;
 const int deterrentDevice = 2;
 //const int weighCorrectCatPin = 7;
 const int tarePin = 7;
@@ -46,6 +47,7 @@ void setup() {
   doorServo.attach(A0);
   //pinMode(deterrentDevice, OUTPUT);
   pinMode(thereIsACatPin, OUTPUT);
+  pinMode(offTare, OUTPUT);
   //pinMode(reservoirLowLED, OUTPUT);
   //pinMode(foodDispensorPin, OUTPUT);
   //pinMode(dispensorAtTopPin, INPUT_PULLUP);
@@ -76,6 +78,12 @@ void loop() {
   // when scale is empty, tare if the baseline drifts too much.
   if (abs(scale.get_units()) >= 0.05 && scale.get_units() < 0.1) {
     scale.tare();
+  }
+
+  if (abs(scale.get_units() > 0.1)) {
+    digitalWrite(offTare, HIGH);
+  } else {
+    digitalWrite(offTare, LOW);
   }
 
   // for testing purposes
@@ -273,7 +281,7 @@ float readCatWeight(bool doorClosed) {
     readScale();
   }
   // jibbering is not allowed for a door opener.
-  if (highReading - lowReading > .5 && doorClosed) {
+  if (highReading - lowReading > 1 && doorClosed) {
     thisCatsWeight = 0;
     resetWeighVars();
     return thisCatsWeight;
