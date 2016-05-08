@@ -1,43 +1,40 @@
 // See the README for a complete "talk-through" of the project.
 
 #include <Servo.h>
-#include <NewPing.h>
 #include <HX711.h>
 
 //Establish which pins attach to which items.
 
 Servo doorServo;
 
-const int markPin = A1;
-const int twainPin = A2;
 const int scaleData = A3;
 const int scaleClock = A4;
+const int offTare = A5;
 const int deterrentDevice = 2;
-const int foodDispensorPin = 3;
-const int weighCorrectCatPin = 4;
-const int dispensorAtTopPin = 5;
-const int reservoirLowLED = 6;
+const int openDoorSignal = 4;
+const int runDispenser = 5;
+const int dispenserRelay = 6;
+//const int weighCorrectCatPin = 7;
+const int tarePin = 7;
 
-const int thereIsACatPin = 1;
+const int thereIsACatPin = 13;
 
-
-const int doorClosedAngle = 93;
+const int doorClosedAngle = 10;
 const int doorOpenAngle = 175;
 
-const int max_distance = 20;
-NewPing sonar(markPin, twainPin, max_distance);
+const int minimumPossibleCat = 7;
 
 HX711 scale(scaleData, scaleClock);
 float calibration_factor = -4700;
 
 // Varaibles
-float medianCatWeight = 0;
+float medianCatWeight = 8.4;
 int doorOpen = 0;
-int ration = 3;
-int selectorPosition = 0;
+//int ration = 3;
+//int selectorPosition = 0;
 int doorAngle = doorClosedAngle;
-float allowedWeightVariance = 1;
-const int minimumPossibleCat = 6;
+float allowedWeightVariance = 3;
+int currentServoAngle = 0;
 
 // variables for weigh-in
 float readingTally = 0;
@@ -48,50 +45,96 @@ float averageReading = 0;
 
 void setup() {
   Serial.begin(9600);
-  // Establich which pins are innies, which are outies
+  // Establish which pins are innies, which are outies
   doorServo.attach(A0);
-  pinMode(deterrentDevice, OUTPUT);
+  //pinMode(deterrentDevice, OUTPUT);
   pinMode(thereIsACatPin, OUTPUT);
-  pinMode(reservoirLowLED, OUTPUT);
-  pinMode(foodDispensorPin, OUTPUT);
-  pinMode(dispensorAtTopPin, INPUT_PULLUP);
-  pinMode(weighCorrectCatPin, INPUT_PULLUP);
+  pinMode(offTare, OUTPUT);
+  pinMode(dispenserRelay, OUTPUT);
+  //pinMode(reservoirLowLED, OUTPUT);
+  //pinMode(foodDispensorPin, OUTPUT);
+  //pinMode(dispensorAtTopPin, INPUT_PULLUP);
+  //pinMode(weighCorrectCatPin, INPUT_PULLUP);
+  pinMode(openDoorSignal, INPUT_PULLUP);
+  pinMode(runDispenser, INPUT_PULLUP);
+  pinMode(tarePin, INPUT_PULLUP);
+  currentServoAngle = doorServo.read();
+  closeDoor();
 
   // initialize the scale
   scale.set_scale(calibration_factor);
+  // TODO: rethink this. If there is a cat when the machine turns on, there'll be trouble?
   scale.tare();  //Reset the scale to 0
 }
 
 void loop() {
   // check the distance from the lid to the top of the food pile in the reservoir
-  int uS = sonar.ping_median();
-  if (uS / US_ROUNDTRIP_CM > 6) {
+  /*int uS = sonar.ping_median();
+    (uS / US_ROUNDTRIP_CM > 6) {
     digitalWrite(reservoirLowLED, HIGH);
-  } else {
+    } else {
     digitalWrite(reservoirLowLED, LOW);
-  }
-
+    }
+  */
   // See where the selector is and change the ration as needed;
-  rationRead();
+  //rationRead();
 
+  //Dispense food if the switch is on
+  while (digitalRead(runDispenser) == LOW) {
+    digitalWrite(dispenserRelay, HIGH);
+    Serial.print("running dispenser");
+  }
+  digitalWrite(dispenserRelay, LOW);
+  Serial.print("not running dispenser");
+  
   // when scale is empty, tare if the baseline drifts too much.
   if (abs(scale.get_units()) >= 0.05 && scale.get_units() < 0.1) {
     scale.tare();
   }
 
+  if (abs(scale.get_units() > 0.1)) {
+    digitalWrite(offTare, HIGH);
+  } else {
+    digitalWrite(offTare, LOW);
+  }
+
   // for testing purposes
   Serial.print("Scale reading: ");
   Serial.println(scale.get_units());
+  Serial.print("medianCat: ");
+  Serial.println(medianCatWeight);
+  Serial.println("");
+
+  /*
+  if(digitalRead(openDoorSignal) == LOW){
+    Serial.print("Yeah, you pushed the button");
+  };
+  */
+
+  // Allows the user to tare by pressing "t" in the serial monitor
+  if (Serial.available())
+  {
+    char temp = Serial.read();
+    if (temp == 't' || temp == 'T')
+    scale.tare();
+  }
+
+  // tare with a button too!
+  if (digitalRead(tarePin) == LOW){
+    scale.tare();
+  }
 
   // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches
 
   // push a button to weigh in the correct cat,
   // sets the medianCatWeight if a good reading is achieved
-  if (digitalRead(weighCorrectCatPin) == LOW) {
+  /*if (digitalRead(weighCorrectCatPin) == LOW) {
     weighIn();
   }
-  
-  // first see that there is a cat (>6lbs) then read its weight
+  */
+
+  // first see that there is a cat (>6lbs) then read its weight,
+  // finally, a human has to push a button too.
   if (scale.get_units() > minimumPossibleCat) {
     // get a reading and set it for this fn
     float catOnScaleWeight = readCatWeight(true);
@@ -99,9 +142,11 @@ void loop() {
     Serial.println(catOnScaleWeight);
 
     // see if in range
-    if (abs(catOnScaleWeight - medianCatWeight) <= allowedWeightVariance) {
+    if (abs(catOnScaleWeight - medianCatWeight) <= allowedWeightVariance && digitalRead(openDoorSignal) == LOW) {
       // make this the new median weight
-      medianCatWeight = catOnScaleWeight;
+      //medianCatWeight = catOnScaleWeight;
+      // Swap ^ for v if we ever go back to using weight for a credential.
+      medianCatWeight = 8.4;
       Serial.print("New Median Cat Weight: ");
       Serial.println(medianCatWeight);
       // do the things for the right cat
@@ -115,9 +160,15 @@ void loop() {
         float checkWeight = readCatWeight(false);
         Serial.print("checkWeight: ");
         Serial.println(checkWeight);
+
+        // Option to close the door by pushing a button
+        if (digitalRead(openDoorSignal) == LOW) {
+          closeDoor();
+        }
+
         // if the cat has stepped off the scale, as indicated by the weight dropping to less than 1/3
         if (checkWeight < (medianCatWeight / 3)) {
-          // close doors, end loop
+          // close door, end loop
           closeDoor();
           stillFeeding = false;
 
@@ -137,45 +188,42 @@ void loop() {
       intruderPresenceScore = 0;
     }
 
-  } // end of checking the weight of the cat
+  } // end of checking the weight of the cat and feeding it.
 
 } // end of main loop
 
 
 
 
-void openDoor() {
+void closeDoor() {
   // Open the door to the open angle
-  for (doorAngle = doorClosedAngle; doorAngle < doorOpenAngle; doorAngle++) {
+  for (doorAngle = currentServoAngle; doorAngle > doorClosedAngle; doorAngle--) {
+    doorServo.write(doorAngle);
+    delay(30);
+  }
+  doorOpen = true;
+  currentServoAngle = doorServo.read();
+}
+
+void openDoor() {
+  for (doorAngle = currentServoAngle; doorAngle <= doorOpenAngle; doorAngle++) {
     doorServo.write(doorAngle);
     delay(60);
   }
-  doorOpen = 1;
-  // drop the aloted food portion(s).
-  feed();
-  delay(1000);
+  doorOpen = false;
+  currentServoAngle = doorServo.read();
 }
 
-void closeDoor() {
-  // checking to be sure the door is open, then close it
-  if (doorOpen == 1) {
-    for (doorAngle = doorOpenAngle; doorAngle >= doorClosedAngle; doorAngle--) {
-      doorServo.write(doorAngle);
-      delay(60);
-    }
-    doorOpen = 0;
-  }
-}
-
-void feed() {
+/*
+  void feed() {
   // use the too-much-food function? look back to commits pre 12/26/15
   // if there's not much food in the bowl and the doors are open, the hopper starts dropping portions of food.
   if (doorOpen == 1) {
-    // start rotating the motor. 
-    // When it gets back to the top it checks weight (a higher value than above) 
+    // start rotating the motor.
+    // When it gets back to the top it checks weight (a higher value than above)
     // and to see that it's under ration before continuing with the rotate.
     /* Serial.print("ration: ");
-      Serial.println(ration); */
+      Serial.println(ration);
     for (int i = 0 ; doorOpen == 1 && ration > i ; i++) {
       // dispensor at top will be determined by a contact to a metal plate on a disc that rotates with the dispensor ball,
       // so when it hits that plate it'll be oriented to the fill position. When it starts back up, it'll still be in contact for a bit
@@ -190,7 +238,7 @@ void feed() {
     }
     digitalWrite(foodDispensorPin, LOW);
   }
-}
+  }*/
 
 void ledBlink(int blinkingLED, int blinkOnLengthMs, int blinkOffLengthMs) {
   unsigned long startMillis = millis();
@@ -200,6 +248,7 @@ void ledBlink(int blinkingLED, int blinkOnLengthMs, int blinkOffLengthMs) {
   while (millis() < startMillis + blinkOffLengthMs + blinkOnLengthMs);
 }
 
+/*
 void weighIn() {
   unsigned long startMillis = millis();
   while (digitalRead(weighCorrectCatPin) == LOW && millis() - startMillis < 2000) {
@@ -223,6 +272,7 @@ void weighIn() {
   Serial.print("Calibrated Median Cat Weight: ");
   Serial.println(medianCatWeight);
 }
+*/
 
 void resetWeighVars() {
   readingTally = 0;
@@ -242,7 +292,7 @@ float readCatWeight(bool doorClosed) {
     readScale();
   }
   // jibbering is not allowed for a door opener.
-  if (highReading - lowReading > .5 && doorClosed) {
+  if (highReading - lowReading > 1 && doorClosed) {
     thisCatsWeight = 0;
     resetWeighVars();
     return thisCatsWeight;
@@ -288,10 +338,10 @@ void deterrent(int deterTimeMs) {
 
 // uses binary to give each input from the rotary switch a unique value to add to the int, sets ration acordingly. This is mapped out, see the red grid notebook.
 // straight up is 1, going clockwise from there. The flat part of the shaft is what was used to idicate direction.
-void rationRead() {
-  // todo: replace this with a user interface.
-  ration = 3;
-}
+//void rationRead() {
+// todo: replace this with a user interface.
+//ration = 3;
+//}
 
 
 
