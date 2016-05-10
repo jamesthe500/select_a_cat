@@ -2,11 +2,14 @@
 
 #include <Servo.h>
 #include <HX711.h>
+#include <NewPing.h>
 
 //Establish which pins attach to which items.
 
 Servo doorServo;
 
+const int markPin = A1;
+const int twainPin = A2;
 const int scaleData = A3;
 const int scaleClock = A4;
 const int offTare = A5;
@@ -43,6 +46,11 @@ float highReading = 0;
 float lowReading = 1000;
 float averageReading = 0;
 
+// Setting up low-food sensor
+const int min_lowDist = 34;
+const int max_distance = 45;
+NewPing sonar(markPin, twainPin, max_distance);
+
 void setup() {
   Serial.begin(9600);
   // Establish which pins are innies, which are outies
@@ -69,13 +77,13 @@ void setup() {
 
 void loop() {
   // check the distance from the lid to the top of the food pile in the reservoir
-  /*int uS = sonar.ping_median();
-    (uS / US_ROUNDTRIP_CM > 6) {
-    digitalWrite(reservoirLowLED, HIGH);
+  int uS = sonar.ping_median();
+  if (uS / US_ROUNDTRIP_CM > min_lowDist) {
+    ledBlink(offTare, 200, 200);
     } else {
-    digitalWrite(reservoirLowLED, LOW);
-    }
-  */
+    digitalWrite(offTare, LOW);
+  }
+
   // See where the selector is and change the ration as needed;
   //rationRead();
 
@@ -342,13 +350,3 @@ void deterrent(int deterTimeMs) {
 // todo: replace this with a user interface.
 //ration = 3;
 //}
-
-
-
-
-
-
-
-
-
-
