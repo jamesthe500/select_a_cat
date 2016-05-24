@@ -22,10 +22,10 @@ const int tarePin = 7;
 
 const int thereIsACatPin = 13;
 
-const int doorClosedAngle = 10;
+const int doorClosedAngle = 25;
 const int doorOpenAngle = 175;
 
-const int minimumPossibleCat = 7;
+const int minimumPossibleCat = 4;
 
 HX711 scale(scaleData, scaleClock);
 float calibration_factor = -4700;
@@ -77,12 +77,12 @@ void setup() {
 
 void loop() {
   // check the distance from the lid to the top of the food pile in the reservoir
-  int uS = sonar.ping_median();
-  if (uS / US_ROUNDTRIP_CM > min_lowDist) {
-    ledBlink(offTare, 200, 200);
-    } else {
-    digitalWrite(offTare, LOW);
-  }
+//  int uS = sonar.ping_median();
+//  if (uS / US_ROUNDTRIP_CM > min_lowDist) {
+//    ledBlink(offTare, 200, 200);
+//    } else {
+//    digitalWrite(offTare, LOW);
+//  }
 
   // See where the selector is and change the ration as needed;
   //rationRead();
@@ -93,7 +93,6 @@ void loop() {
     Serial.print("running dispenser");
   }
   digitalWrite(dispenserRelay, LOW);
-  Serial.print("not running dispenser");
   
   // when scale is empty, tare if the baseline drifts too much.
   if (abs(scale.get_units()) >= 0.05 && scale.get_units() < 0.1) {
@@ -171,12 +170,14 @@ void loop() {
 
         // Option to close the door by pushing a button
         if (digitalRead(openDoorSignal) == LOW) {
+          Serial.println("Closed by button");
           closeDoor();
         }
 
         // if the cat has stepped off the scale, as indicated by the weight dropping to less than 1/3
         if (checkWeight < (medianCatWeight / 3)) {
           // close door, end loop
+          Serial.println("Closed b/c cat left");
           closeDoor();
           stillFeeding = false;
 
@@ -186,6 +187,7 @@ void loop() {
           // if the extra cat has stuck around
           if (intruderPresenceScore > 3) {
             closeDoor();
+            Serial.println("Closed b/c of intruder");
             stillFeeding = false;
           } else {
             deterrent(1000);
@@ -205,20 +207,22 @@ void loop() {
 
 void closeDoor() {
   // Open the door to the open angle
+  Serial.println("closing door");
   for (doorAngle = currentServoAngle; doorAngle > doorClosedAngle; doorAngle--) {
     doorServo.write(doorAngle);
-    delay(30);
+    delay(50);
   }
-  doorOpen = true;
+  doorOpen = false;
   currentServoAngle = doorServo.read();
 }
 
 void openDoor() {
+  Serial.println("opening door");
   for (doorAngle = currentServoAngle; doorAngle <= doorOpenAngle; doorAngle++) {
     doorServo.write(doorAngle);
-    delay(60);
+    delay(10);
   }
-  doorOpen = false;
+  doorOpen = true;
   currentServoAngle = doorServo.read();
 }
 
@@ -298,9 +302,14 @@ float readCatWeight(bool doorClosed) {
   while (scale.get_units() > minimumPossibleCat && millis() - startMillis < 1000) {
     ledBlink(thereIsACatPin, 50, 50);
     readScale();
+    Serial.println("");
   }
   // jibbering is not allowed for a door opener.
   if (highReading - lowReading > 1 && doorClosed) {
+    Serial.print("JIBBERED High: ");
+    Serial.print(highReading);
+    Serial.print(" low: ");
+    Serial.println(lowReading);
     thisCatsWeight = 0;
     resetWeighVars();
     return thisCatsWeight;
@@ -321,6 +330,8 @@ float readCatWeight(bool doorClosed) {
 
 void readScale() {
   float currentReading = scale.get_units();
+  Serial.print(currentReading);
+  Serial.print(" ");
   readingTally += currentReading;
   readingNumber += 1;
   if (highReading < currentReading) {
@@ -340,13 +351,4 @@ void deterrent(int deterTimeMs) {
     digitalWrite(deterrentDevice, LOW);
     delay(20);
   }
-
 }
-
-
-// uses binary to give each input from the rotary switch a unique value to add to the int, sets ration acordingly. This is mapped out, see the red grid notebook.
-// straight up is 1, going clockwise from there. The flat part of the shaft is what was used to idicate direction.
-//void rationRead() {
-// todo: replace this with a user interface.
-//ration = 3;
-//}

@@ -2,7 +2,7 @@
 
 const int markPin = A1;
 const int twainPin = A2;
-const int offTare = 13;
+const int offTare = A5;
 
 const int min_lowDist = 34;
 const int max_distance = 45;
@@ -18,6 +18,8 @@ pinMode(offTare, OUTPUT);
 void loop() {
   // put your main code here, to run repeatedly:
     int uS = sonar.ping_median();
+    Serial.println(uS / US_ROUNDTRIP_CM);
+  
   if (uS / US_ROUNDTRIP_CM > min_lowDist) {
     ledBlink(offTare, 200, 200);
     } else {
