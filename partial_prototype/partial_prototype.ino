@@ -22,8 +22,9 @@ const int tarePin = 7;
 
 const int thereIsACatPin = 13;
 
-const int doorClosedAngle = 25;
-const int doorOpenAngle = 175;
+// if door sweep needs to be reveresed, these need to be swapped.v
+const int doorClosedAngle = 175;
+const int doorOpenAngle = 25;
 
 const int minimumPossibleCat = 4;
 
@@ -37,7 +38,7 @@ int doorOpen = 0;
 //int selectorPosition = 0;
 int doorAngle = doorClosedAngle;
 float allowedWeightVariance = 3;
-int currentServoAngle = 0;
+int currentServoAngle = 175;
 
 // variables for weigh-in
 float readingTally = 0;
@@ -66,8 +67,17 @@ void setup() {
   pinMode(openDoorSignal, INPUT_PULLUP);
   pinMode(runDispenser, INPUT_PULLUP);
   pinMode(tarePin, INPUT_PULLUP);
-  currentServoAngle = doorServo.read();
+  //currentServoAngle = doorServo.read();
+  Serial.println(currentServoAngle);
+  /*cycleServo(true);
+  cycleServo(false);
+  */
+  openDoor();
   closeDoor();
+  openDoor();
+  closeDoor();
+  
+ 
 
   // initialize the scale
   scale.set_scale(calibration_factor);
@@ -169,10 +179,10 @@ void loop() {
         Serial.println(checkWeight);
 
         // Option to close the door by pushing a button
-        if (digitalRead(openDoorSignal) == LOW) {
-          Serial.println("Closed by button");
-          closeDoor();
-        }
+       // if (digitalRead(openDoorSignal) == LOW) {
+       //   Serial.println("Closed by button");
+       //   closeDoor();
+       // }
 
         // if the cat has stepped off the scale, as indicated by the weight dropping to less than 1/3
         if (checkWeight < (medianCatWeight / 3)) {
@@ -202,9 +212,68 @@ void loop() {
 
 } // end of main loop
 
+//const int doorClosedAngle = 175;
+//const int doorOpenAngle = 25;
+
+void openDoor() {
+  // open the door to the open angle
+  Serial.println("opening door");
+  for (doorAngle = currentServoAngle; doorAngle > doorOpenAngle; doorAngle--) {
+    doorServo.write(doorAngle);
+    delay(15);
+    /*Serial.print("Servo Angle Opening ");
+    Serial.println(doorAngle);
+    Serial.print("Reality? ");
+    Serial.println(doorServo.read()); */
+  }
+  doorOpen = true;
+  currentServoAngle = doorServo.read();
+}
+
+void closeDoor() {
+  Serial.println("closing door");
+  for (doorAngle = currentServoAngle; doorAngle <= doorClosedAngle; doorAngle++) {
+    doorServo.write(doorAngle);
+    delay(25);
+    /*Serial.print("Servo Angle closing ");
+    Serial.println(doorAngle);
+    Serial.print("Reality? ");
+    Serial.println(doorServo.read());  */
+  }
+  doorOpen = false;
+  currentServoAngle = doorServo.read();
+}
+
+// for start-up. To avoid the problem of it doesn't know where it is.
+void cycleServo(boolean open) {
+  if (open == true){
+    Serial.println("Cycle opening door");
+    for (doorAngle = currentServoAngle; doorAngle > 15; doorAngle--) {
+      doorServo.write(doorAngle);
+      delay(15);
+    }
+    delay(500);
+  } else {
+  
+    Serial.println("Cycle closing door");
+    for (doorAngle = currentServoAngle; doorAngle <= 180; doorAngle++) {
+      doorServo.write(doorAngle);
+      delay(25);
+    }
+    delay(500);
+    Serial.println("Back to closed angle");
+    for (doorAngle = currentServoAngle; doorAngle >= doorClosedAngle; doorAngle--) {
+      doorServo.write(doorAngle);
+      delay(15);
+    }
+  }
+}
 
 
-
+/*
+ * It keeps coming up that the doors need to rotate the oposite way.
+ * Here it the opposite to ^
+ * Don't forget to swap angles up in the declarations.
 void closeDoor() {
   // Close the door to the close angle
   Serial.println("closing door");
@@ -225,6 +294,7 @@ void openDoor() {
   doorOpen = true;
   currentServoAngle = doorServo.read();
 }
+*/
 
 /*
   void feed() {
