@@ -206,11 +206,11 @@ void loop() {
 
 
 void closeDoor() {
-  // Open the door to the open angle
+  // Close the door to the close angle
   Serial.println("closing door");
   for (doorAngle = currentServoAngle; doorAngle > doorClosedAngle; doorAngle--) {
     doorServo.write(doorAngle);
-    delay(50);
+    delay(40);
   }
   doorOpen = false;
   currentServoAngle = doorServo.read();
