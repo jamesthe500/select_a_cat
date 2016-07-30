@@ -23,8 +23,8 @@ const int tarePin = 7;
 const int thereIsACatPin = 13;
 
 // if door sweep needs to be reveresed, these need to be swapped.v
-const int doorClosedAngle = 175;
-const int doorOpenAngle = 25;
+const int doorClosedAngle = 25;
+const int doorOpenAngle = 175;
 
 const int minimumPossibleCat = 4;
 
@@ -72,9 +72,6 @@ void setup() {
   /*cycleServo(true);
   cycleServo(false);
   */
-  openDoor();
-  closeDoor();
-  openDoor();
   closeDoor();
   
  
@@ -214,17 +211,13 @@ void loop() {
 
 //const int doorClosedAngle = 175;
 //const int doorOpenAngle = 25;
-
+/*
 void openDoor() {
   // open the door to the open angle
   Serial.println("opening door");
   for (doorAngle = currentServoAngle; doorAngle > doorOpenAngle; doorAngle--) {
     doorServo.write(doorAngle);
     delay(15);
-    /*Serial.print("Servo Angle Opening ");
-    Serial.println(doorAngle);
-    Serial.print("Reality? ");
-    Serial.println(doorServo.read()); */
   }
   doorOpen = true;
   currentServoAngle = doorServo.read();
@@ -235,51 +228,23 @@ void closeDoor() {
   for (doorAngle = currentServoAngle; doorAngle <= doorClosedAngle; doorAngle++) {
     doorServo.write(doorAngle);
     delay(25);
-    /*Serial.print("Servo Angle closing ");
-    Serial.println(doorAngle);
-    Serial.print("Reality? ");
-    Serial.println(doorServo.read());  */
   }
   doorOpen = false;
   currentServoAngle = doorServo.read();
 }
-
-// for start-up. To avoid the problem of it doesn't know where it is.
-void cycleServo(boolean open) {
-  if (open == true){
-    Serial.println("Cycle opening door");
-    for (doorAngle = currentServoAngle; doorAngle > 15; doorAngle--) {
-      doorServo.write(doorAngle);
-      delay(15);
-    }
-    delay(500);
-  } else {
-  
-    Serial.println("Cycle closing door");
-    for (doorAngle = currentServoAngle; doorAngle <= 180; doorAngle++) {
-      doorServo.write(doorAngle);
-      delay(25);
-    }
-    delay(500);
-    Serial.println("Back to closed angle");
-    for (doorAngle = currentServoAngle; doorAngle >= doorClosedAngle; doorAngle--) {
-      doorServo.write(doorAngle);
-      delay(15);
-    }
-  }
-}
-
+*/
 
 /*
  * It keeps coming up that the doors need to rotate the oposite way.
  * Here it the opposite to ^
  * Don't forget to swap angles up in the declarations.
+ */ 
 void closeDoor() {
   // Close the door to the close angle
   Serial.println("closing door");
   for (doorAngle = currentServoAngle; doorAngle > doorClosedAngle; doorAngle--) {
     doorServo.write(doorAngle);
-    delay(40);
+    delay(20);
   }
   doorOpen = false;
   currentServoAngle = doorServo.read();
@@ -294,7 +259,7 @@ void openDoor() {
   doorOpen = true;
   currentServoAngle = doorServo.read();
 }
-*/
+
 
 /*
   void feed() {
