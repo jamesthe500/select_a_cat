@@ -1,12 +1,16 @@
-// See the README for a complete "talk-through" of the project.
+#include <PWMServo.h>
 
-#include <Servo.h>
+// See the README for a complete "talk-through" of the project.
+// This is the working model for now (10/30/16)
+
+
+//#include <Servo.h>
 #include <HX711.h>
 #include <NewPing.h>
 
 //Establish which pins attach to which items.
 
-Servo doorServo;
+PWMServo doorServo;
 
 const int markPin = A1;
 const int twainPin = A2;
@@ -55,7 +59,7 @@ NewPing sonar(markPin, twainPin, max_distance);
 void setup() {
   Serial.begin(9600);
   // Establish which pins are innies, which are outies
-  doorServo.attach(A0);
+  //doorServo.attach(9);
   //pinMode(deterrentDevice, OUTPUT);
   pinMode(thereIsACatPin, OUTPUT);
   pinMode(offTare, OUTPUT);
@@ -241,6 +245,7 @@ void closeDoor() {
  */ 
 void closeDoor() {
   // Close the door to the close angle
+  doorServo.attach(9);
   Serial.println("closing door");
   for (doorAngle = currentServoAngle; doorAngle > doorClosedAngle; doorAngle--) {
     doorServo.write(doorAngle);
@@ -248,16 +253,19 @@ void closeDoor() {
   }
   doorOpen = false;
   currentServoAngle = doorServo.read();
+  doorServo.detach();
 }
 
 void openDoor() {
   Serial.println("opening door");
+  doorServo.attach(9);
   for (doorAngle = currentServoAngle; doorAngle <= doorOpenAngle; doorAngle++) {
     doorServo.write(doorAngle);
     delay(10);
   }
   doorOpen = true;
   currentServoAngle = doorServo.read();
+  doorServo.detach();
 }
 
 
