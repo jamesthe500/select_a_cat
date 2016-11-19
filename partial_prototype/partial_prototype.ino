@@ -21,7 +21,7 @@ const int dispenserRelay = 6;
 //const int weighCorrectCatPin = 7;
 const int tarePin = 7;
 
-const int rpmPin = 12
+const int rpmPin = 12;
 const int thereIsACatPin = 13;
 
 // if door sweep needs to be reveresed, these need to be swapped.v
@@ -105,7 +105,8 @@ void loop() {
 
   // if both buttons are pushed, start pulsing the dispensor auger
   if (digitalRead(openDoorSignal) == LOW && digitalRead(tarePin) == LOW){
-    pulseAuger(10);
+    //pulseAuger(10);
+   dispenseForSecs(10);
    
   }
 
@@ -230,6 +231,49 @@ void pulseAuger(unsigned int iterations){
       delay(950);
       digitalWrite(dispenserRelay, LOW);
     }
+}
+
+
+
+void dispenseForSecs(unsigned int seconds){
+  doorServo.attach(9);
+  closeDoor();
+  digitalWrite(dispenserRelay, HIGH);
+  bool augerRunning = true;
+  unsigned long startDispense = millis();
+  unsigned long timerA = 0;
+  unsigned long timerB = 0;
+  unsigned long currentTime = millis();
+  unsigned int ellapsedMillis = 0;
+  // give it a chance to spin up before it could be potentially stopped.
+  delay(800);
+  
+  while((currentTime - startDispense) < (seconds * 1000)){
+    
+    if (digitalRead(rpmPin) == LOW){
+      timerB = millis();
+      // check the time elapsed. Set RPMs allowed here, and a few lines down
+      ellapsedMillis = timerB - timerA;
+      
+      timerA = millis();
+      if (ellapsedMillis < 1000){
+        digitalWrite(dispenserRelay, LOW);
+        augerRunning = false;
+        
+        // pause the looping so multiple reads per revolution don't happen
+        while((digitalRead(rpmPin) == LOW) && ((currentTime - startDispense) < (seconds * 1000))){
+          delay(1);
+        }    
+      }
+    } // end of sensor if
+
+    currentTime = millis();
+    if ((currentTime - timerA) >1000){
+      digitalWrite(dispenserRelay, HIGH);
+    }
+  }
+  // make sure the drill is off and all.
+  digitalWrite(dispenserRelay, LOW);
 }
 
 //const int doorClosedAngle = 175;
