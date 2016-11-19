@@ -99,18 +99,14 @@ void loop() {
   //Dispense food if the switch is on
   while (digitalRead(runDispenser) == LOW) {
     digitalWrite(dispenserRelay, HIGH);
-    Serial.print("running dispenser");
   }
   digitalWrite(dispenserRelay, LOW);
 
-  // if both buttons are pushed, start pulsing the dispensor auger
+  // if both buttons are pushed, auto-dispens for the seconds specified
   if (digitalRead(openDoorSignal) == LOW && digitalRead(tarePin) == LOW){
-    //pulseAuger(10);
-   dispenseForSecs(10);
-   
+   dispenseForSecs(15);
+   awaitCatSecs(60);
   }
-
-  
   
   // when scale is empty, tare if the baseline drifts too much.
   if (abs(scale.get_units()) >= 0.05 && scale.get_units() < 0.1) {
@@ -124,16 +120,12 @@ void loop() {
   }
 
   // for testing purposes
+  /*
   Serial.print("Scale reading: ");
   Serial.println(scale.get_units());
   Serial.print("medianCat: ");
   Serial.println(medianCatWeight);
   Serial.println("");
-
-  /*
-  if(digitalRead(openDoorSignal) == LOW){
-    Serial.print("Yeah, you pushed the button");
-  };
   */
 
   // Allows the user to tare by pressing "t" in the serial monitor
@@ -151,23 +143,53 @@ void loop() {
 
   // Because we're using digital PULLUP, LOW is HIGH and HIGH is LOW for all switches
 
-  // push a button to weigh in the correct cat,
-  // sets the medianCatWeight if a good reading is achieved
-  /*if (digitalRead(weighCorrectCatPin) == LOW) {
-    weighIn();
-  }
-  */
+  checkForAndFeed(true);
 
-  // first see that there is a cat (>6lbs) then read its weight,
-  // finally, a human has to push a button too.
-  if (scale.get_units() > minimumPossibleCat) {
+  if(digitalRead(openDoorSignal) == LOW){
+    awaitCatSecs(60);
+  }
+
+} // end of main loop
+
+
+void awaitCatSecs(unsigned int seconds){
+  unsigned long currentTime = millis();
+  unsigned long startTime = millis();
+  digitalWrite(offTare, HIGH);
+  bool ledOn = true;
+  while (((currentTime - startTime) < (seconds * 1000)) && (digitalRead(tarePin) == HIGH)){
+    currentTime = millis();
+    checkForAndFeed(false);
+    if(ledOn){
+      digitalWrite(offTare, LOW);
+      ledOn = false;
+    } else {
+      digitalWrite(offTare, HIGH);
+      ledOn = true;
+    }
+  }
+  digitalWrite(offTare, LOW);
+}
+
+void checkForAndFeed(bool pushNeeded){
+  bool checkScale = false;
+  
+  if (pushNeeded){
+    if(digitalRead(openDoorSignal) == LOW){
+      checkScale = true;
+    } 
+  } else {
+    checkScale = true;
+  }
+    
+  if (checkScale == true && (scale.get_units() > minimumPossibleCat)) {
     // get a reading and set it for this fn
     float catOnScaleWeight = readCatWeight(true);
     Serial.print("catOnScale: ");
     Serial.println(catOnScaleWeight);
 
     // see if in range
-    if (abs(catOnScaleWeight - medianCatWeight) <= allowedWeightVariance && digitalRead(openDoorSignal) == LOW) {
+    if (abs(catOnScaleWeight - medianCatWeight) <= allowedWeightVariance) {
       // make this the new median weight
       //medianCatWeight = catOnScaleWeight;
       // Swap ^ for v if we ever go back to using weight for a credential.
@@ -215,31 +237,13 @@ void loop() {
 
       intruderPresenceScore = 0;
     }
-
   } // end of checking the weight of the cat and feeding it.
-
-} // end of main loop
-
-void pulseAuger(unsigned int iterations){
-  //iterations = iterations;
-   digitalWrite(dispenserRelay, HIGH);
-    delay(1000);
-    digitalWrite(dispenserRelay, LOW);
-    for (int i = 0; i < iterations ; i++){
-      delay(230);
-      digitalWrite(dispenserRelay, HIGH);
-      delay(950);
-      digitalWrite(dispenserRelay, LOW);
-    }
 }
-
-
 
 void dispenseForSecs(unsigned int seconds){
   doorServo.attach(9);
   closeDoor();
   digitalWrite(dispenserRelay, HIGH);
-  bool augerRunning = true;
   unsigned long startDispense = millis();
   unsigned long timerA = 0;
   unsigned long timerB = 0;
@@ -258,7 +262,6 @@ void dispenseForSecs(unsigned int seconds){
       timerA = millis();
       if (ellapsedMillis < 1000){
         digitalWrite(dispenserRelay, LOW);
-        augerRunning = false;
         
         // pause the looping so multiple reads per revolution don't happen
         while((digitalRead(rpmPin) == LOW) && ((currentTime - startDispense) < (seconds * 1000))){
@@ -268,10 +271,11 @@ void dispenseForSecs(unsigned int seconds){
     } // end of sensor if
 
     currentTime = millis();
-    if ((currentTime - timerA) >1000){
+    if ((currentTime - timerA) > 1000){
       digitalWrite(dispenserRelay, HIGH);
     }
   }
+  
   // make sure the drill is off and all.
   digitalWrite(dispenserRelay, LOW);
 }
