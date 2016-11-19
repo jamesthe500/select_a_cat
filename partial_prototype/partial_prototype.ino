@@ -1,10 +1,7 @@
-#include <PWMServo.h>
-
 // See the README for a complete "talk-through" of the project.
 // This is the working model for now (10/30/16)
 
-
-//#include <Servo.h>
+#include <PWMServo.h>
 #include <HX711.h>
 #include <NewPing.h>
 
@@ -24,6 +21,7 @@ const int dispenserRelay = 6;
 //const int weighCorrectCatPin = 7;
 const int tarePin = 7;
 
+const int rpmPin = 12
 const int thereIsACatPin = 13;
 
 // if door sweep needs to be reveresed, these need to be swapped.v
@@ -59,7 +57,6 @@ NewPing sonar(markPin, twainPin, max_distance);
 void setup() {
   Serial.begin(9600);
   // Establish which pins are innies, which are outies
-  //doorServo.attach(9);
   //pinMode(deterrentDevice, OUTPUT);
   pinMode(thereIsACatPin, OUTPUT);
   pinMode(offTare, OUTPUT);
@@ -71,6 +68,7 @@ void setup() {
   pinMode(openDoorSignal, INPUT_PULLUP);
   pinMode(runDispenser, INPUT_PULLUP);
   pinMode(tarePin, INPUT_PULLUP);
+  pinMode(rpmPin, INPUT_PULLUP);
   //currentServoAngle = doorServo.read();
   Serial.println(currentServoAngle);
   /*cycleServo(true);
@@ -104,6 +102,14 @@ void loop() {
     Serial.print("running dispenser");
   }
   digitalWrite(dispenserRelay, LOW);
+
+  // if both buttons are pushed, start pulsing the dispensor auger
+  if (digitalRead(openDoorSignal) == LOW && digitalRead(tarePin) == LOW){
+    pulseAuger(10);
+   
+  }
+
+  
   
   // when scale is empty, tare if the baseline drifts too much.
   if (abs(scale.get_units()) >= 0.05 && scale.get_units() < 0.1) {
@@ -212,6 +218,19 @@ void loop() {
   } // end of checking the weight of the cat and feeding it.
 
 } // end of main loop
+
+void pulseAuger(unsigned int iterations){
+  //iterations = iterations;
+   digitalWrite(dispenserRelay, HIGH);
+    delay(1000);
+    digitalWrite(dispenserRelay, LOW);
+    for (int i = 0; i < iterations ; i++){
+      delay(230);
+      digitalWrite(dispenserRelay, HIGH);
+      delay(950);
+      digitalWrite(dispenserRelay, LOW);
+    }
+}
 
 //const int doorClosedAngle = 175;
 //const int doorOpenAngle = 25;
