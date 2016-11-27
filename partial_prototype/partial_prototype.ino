@@ -104,7 +104,8 @@ void loop() {
 
   // if both buttons are pushed, auto-dispens for the seconds specified
   if (digitalRead(openDoorSignal) == LOW && digitalRead(tarePin) == LOW){
-   dispenseForSecs(15);
+   dispenseForSecs(7);
+   Serial.println("About to await");
    awaitCatSecs(60);
   }
   
@@ -153,6 +154,7 @@ void loop() {
 
 
 void awaitCatSecs(unsigned int seconds){
+  Serial.println("awaiting cat");
   unsigned long currentTime = millis();
   unsigned long startTime = millis();
   digitalWrite(offTare, HIGH);
@@ -249,34 +251,55 @@ void dispenseForSecs(unsigned int seconds){
   unsigned long timerB = 0;
   unsigned long currentTime = millis();
   unsigned int ellapsedMillis = 0;
+  unsigned int rpmFactorMs = 200;
   // give it a chance to spin up before it could be potentially stopped.
   delay(800);
   
   while((currentTime - startDispense) < (seconds * 1000)){
     
-    if (digitalRead(rpmPin) == LOW){
+    if (digitalRead(rpmPin) == HIGH){
       timerB = millis();
       // check the time elapsed. Set RPMs allowed here, and a few lines down
       ellapsedMillis = timerB - timerA;
+      Serial.print("Timer B: ");
+      Serial.print(timerB);
+      Serial.print(" Timer A: ");
+      Serial.println(timerA);
       
       timerA = millis();
-      if (ellapsedMillis < 1000){
+      if (ellapsedMillis >= rpmFactorMs){
         digitalWrite(dispenserRelay, LOW);
         
-        // pause the looping so multiple reads per revolution don't happen
-        while((digitalRead(rpmPin) == LOW) && ((currentTime - startDispense) < (seconds * 1000))){
-          delay(1);
-        }    
+        Serial.print("OFF with elaps of: ");
+        Serial.println(timerB - timerA);
+      } else if (ellapsedMillis < rpmFactorMs){
+        digitalWrite(dispenserRelay, HIGH);    
+          
+        Serial.print("ON  with elaps of: ");
+        Serial.println(timerB - timerA);
       }
+      // pause the looping so multiple reads per revolution don't happen
+        while((digitalRead(rpmPin) == HIGH) && ((currentTime - startDispense) < (seconds * 1000))){
+          delay(1);
+          currentTime = millis();
+        }
     } // end of sensor if
 
     currentTime = millis();
-    if ((currentTime - timerA) > 1000){
+    if ((currentTime - timerA) < rpmFactorMs){
       digitalWrite(dispenserRelay, HIGH);
+      Serial.print("ON  at bottom of loop with elaps of: ");
+      Serial.println(currentTime - timerA);
+    } else if ((currentTime - timerA) >= rpmFactorMs){
+      Serial.print("OFF at bottom of loop with elaps of: ");
+      Serial.println(currentTime - timerA);
+      digitalWrite(dispenserRelay, LOW);
     }
   }
   
   // make sure the drill is off and all.
+        
+  Serial.println("ending the dispense");
   digitalWrite(dispenserRelay, LOW);
 }
 
