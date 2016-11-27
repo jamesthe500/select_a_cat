@@ -20,6 +20,7 @@ const int runDispenser = 5;
 const int dispenserRelay = 6;
 //const int weighCorrectCatPin = 7;
 const int tarePin = 7;
+const int dispenseOpenPin = 8;
 
 const int rpmPin = 12;
 const int thereIsACatPin = 13;
@@ -68,6 +69,7 @@ void setup() {
   pinMode(openDoorSignal, INPUT_PULLUP);
   pinMode(runDispenser, INPUT_PULLUP);
   pinMode(tarePin, INPUT_PULLUP);
+  pinMode(dispenseOpenPin, INPUT_PULLUP);
   pinMode(rpmPin, INPUT_PULLUP);
   //currentServoAngle = doorServo.read();
   Serial.println(currentServoAngle);
@@ -102,8 +104,8 @@ void loop() {
   }
   digitalWrite(dispenserRelay, LOW);
 
-  // if both buttons are pushed, auto-dispens for the seconds specified
-  if (digitalRead(openDoorSignal) == LOW && digitalRead(tarePin) == LOW){
+  // Run the dispense and open programs together if that button is pushed.
+  if (digitalRead(dispenseOpenPin) == LOW){
    dispenseForSecs(15);
    awaitCatSecs(60);
   }
@@ -112,7 +114,8 @@ void loop() {
   if (abs(scale.get_units()) >= 0.05 && scale.get_units() < 0.1) {
     scale.tare();
   }
-
+  
+  // Turn on the LED if off tare
   if (abs(scale.get_units() > 0.1)) {
     digitalWrite(offTare, HIGH);
   } else {
@@ -153,14 +156,14 @@ void loop() {
 
 
 void awaitCatSecs(unsigned int seconds){
-  Serial.println("awaiting cat");
   unsigned long currentTime = millis();
   unsigned long startTime = millis();
   digitalWrite(offTare, HIGH);
   bool ledOn = true;
-  while (((currentTime - startTime) < (seconds * 1000)) && (digitalRead(tarePin) == HIGH)){
+  bool fed = false;
+  while (((currentTime - startTime) < (seconds * 1000)) && (digitalRead(tarePin) == HIGH && fed == false)){
     currentTime = millis();
-    checkForAndFeed(false);
+    fed = checkForAndFeed(false);
     if(ledOn){
       digitalWrite(offTare, LOW);
       ledOn = false;
@@ -172,7 +175,7 @@ void awaitCatSecs(unsigned int seconds){
   digitalWrite(offTare, LOW);
 }
 
-void checkForAndFeed(bool pushNeeded){
+bool checkForAndFeed(bool pushNeeded){
   bool checkScale = false;
   
   if (pushNeeded){
@@ -235,10 +238,11 @@ void checkForAndFeed(bool pushNeeded){
           }
         }
       } // end of while feeding
-
       intruderPresenceScore = 0;
+      return true; 
     }
   } // end of checking the weight of the cat and feeding it.
+  return false;
 }
 
 void dispenseForSecs(unsigned int seconds){
