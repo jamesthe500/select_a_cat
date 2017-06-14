@@ -50,10 +50,12 @@ float highReading = 0;
 float lowReading = 1000;
 float averageReading = 0;
 
-// Setting up low-food sensor
+// Setting up low-food sensor 
+/*
 const int min_lowDist = 34;
 const int max_distance = 45;
 NewPing sonar(markPin, twainPin, max_distance);
+*/
 
 void setup() {
   Serial.begin(9600);
@@ -151,6 +153,17 @@ void loop() {
   if(digitalRead(openDoorSignal) == LOW){
     awaitCatSecs(60);
   }
+
+  // When there's a cat on the platform, the servo engages in closed position
+  // & allows the loop to continue. 
+  // This prevents cats from maually openning the door.
+  if (scale.get_units() > minimumPossibleCat){
+    doorServo.attach(9);
+    doorServo.write(doorClosedAngle);
+  } else {
+    doorServo.detach();
+  }
+  
 
 } // end of main loop
 
@@ -324,6 +337,7 @@ void closeDoor() {
 void closeDoor() {
   // Close the door to the close angle
   doorServo.attach(9);
+  
   Serial.println("closing door");
   for (doorAngle = currentServoAngle; doorAngle > doorClosedAngle; doorAngle--) {
     doorServo.write(doorAngle);
@@ -331,6 +345,7 @@ void closeDoor() {
   }
   doorOpen = false;
   currentServoAngle = doorServo.read();
+  Serial.println("the angle? " + currentServoAngle);
   doorServo.detach();
 }
 
